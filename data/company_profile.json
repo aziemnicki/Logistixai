@@ -1,0 +1,73 @@
+{
+  "company_name": "EuroTrans Logistics",
+  "contact": {
+    "email": "operations@eurotrans.example.com",
+    "phone": "+49-123-456-7890"
+  },
+  "fleet": [
+    {
+      "vehicle_type": "semi_trailer",
+      "quantity": 15
+    },
+    {
+      "vehicle_type": "refrigerated",
+      "quantity": 5
+    },
+    {
+      "vehicle_type": "truck",
+      "quantity": 8
+    }
+  ],
+  "routes": [
+    {
+      "name": "Germany to France via Belgium",
+      "origin": {
+        "country_code": "DE",
+        "city": "Berlin"
+      },
+      "destination": {
+        "country_code": "FR",
+        "city": "Paris"
+      },
+      "transit_countries": ["BE"]
+    },
+    {
+      "name": "Germany to Netherlands",
+      "origin": {
+        "country_code": "DE",
+        "city": "Hamburg"
+      },
+      "destination": {
+        "country_code": "NL",
+        "city": "Amsterdam"
+      },
+      "transit_countries": []
+    },
+    {
+      "name": "France to Italy via Switzerland",
+      "origin": {
+        "country_code": "FR",
+        "city": "Lyon"
+      },
+      "destination": {
+        "country_code": "IT",
+        "city": "Milan"
+      },
+      "transit_countries": ["CH"]
+    }
+  ],
+  "cargo_categories": [
+    "standard",
+    "perishable"
+  ],
+  "monitoring_preferences": {
+    "scan_frequency": "daily",
+    "priority_countries": ["DE", "FR", "BE", "NL", "IT"],
+    "focus_areas": [
+      "border_control",
+      "emission_standards",
+      "cargo_documentation",
+      "driver_regulations"
+    ]
+  }
+}
