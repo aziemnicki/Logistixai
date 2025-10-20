@@ -40,9 +40,26 @@ async function handleResponse<T>(response: Response): Promise<T> {
  */
 export class LogisticsAPIClient {
   private baseUrl: string
+  private apiKey: string | null
 
-  constructor(baseUrl: string = API_BASE_URL) {
+  constructor(baseUrl: string = API_BASE_URL, apiKey: string | null = null) {
     this.baseUrl = baseUrl
+    this.apiKey = apiKey
+  }
+
+  /**
+   * Get headers for API requests
+   */
+  private getHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
+    const headers: Record<string, string> = {
+      ...additionalHeaders,
+    }
+
+    if (this.apiKey) {
+      headers["X-API-Key"] = this.apiKey
+    }
+
+    return headers
   }
 
   // ============================================================================
@@ -65,7 +82,7 @@ export class LogisticsAPIClient {
   async updateCompanyProfile(profile: CompanyProfile): Promise<CompanyProfile> {
     const response = await fetch(`${this.baseUrl}/api/profile`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(profile),
     })
     return handleResponse<CompanyProfile>(response)
@@ -82,7 +99,7 @@ export class LogisticsAPIClient {
   async generateReport(request: GenerateReportRequest = {}): Promise<GenerateReportResponse> {
     const response = await fetch(`${this.baseUrl}/api/reports/generate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(request),
     })
     return handleResponse<GenerateReportResponse>(response)
@@ -202,7 +219,7 @@ export class LogisticsAPIClient {
   async sendChatMessage(reportId: string, message: string): Promise<ChatMessageResponse> {
     const response = await fetch(`${this.baseUrl}/api/chat/${reportId}/message`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ message } as ChatMessageRequest),
     })
     return handleResponse<ChatMessageResponse>(response)
@@ -213,7 +230,9 @@ export class LogisticsAPIClient {
    * Get suggested follow-up questions
    */
   async getSuggestedQuestions(reportId: string): Promise<SuggestedQuestions> {
-    const response = await fetch(`${this.baseUrl}/api/chat/${reportId}/suggestions`)
+    const response = await fetch(`${this.baseUrl}/api/chat/${reportId}/suggestions`, {
+      headers: this.getHeaders(),
+    })
     return handleResponse<SuggestedQuestions>(response)
   }
 

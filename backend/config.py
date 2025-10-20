@@ -34,9 +34,9 @@ class Settings(BaseSettings):
     # REQUIRED CONFIGURATION
     # ========================================================================
 
-    # Anthropic API Key (REQUIRED)
+    # Anthropic API Key (Optional - can be provided by user at runtime)
     # Get your API key from: https://console.anthropic.com/
-    ANTHROPIC_API_KEY: str
+    ANTHROPIC_API_KEY: Optional[str] = None
 
     # ========================================================================
     # OPTIONAL CONFIGURATION
@@ -81,12 +81,13 @@ class Settings(BaseSettings):
         """Initialize settings and validate required fields."""
         super().__init__(**kwargs)
 
-        # Validate required API key
-        if not self.ANTHROPIC_API_KEY or self.ANTHROPIC_API_KEY == "your_anthropic_api_key_here":
-            raise ValueError(
-                "ANTHROPIC_API_KEY is required! Please set it in your .env file.\n"
-                "Get your API key from: https://console.anthropic.com/"
-            )
+        # Normalize empty strings to None
+        if not self.ANTHROPIC_API_KEY or self.ANTHROPIC_API_KEY.strip() == "":
+            self.ANTHROPIC_API_KEY = None
+            print("⚠️  Warning: No ANTHROPIC_API_KEY in .env. Users must provide their own API key.")
+        elif self.ANTHROPIC_API_KEY == "your_anthropic_api_key_here":
+            self.ANTHROPIC_API_KEY = None
+            print("⚠️  Warning: ANTHROPIC_API_KEY placeholder detected. Users will need to provide their own API key.")
 
 
 # Global settings instance

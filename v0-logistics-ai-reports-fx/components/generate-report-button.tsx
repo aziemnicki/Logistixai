@@ -2,14 +2,21 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { PlusCircle, Loader2, CheckCircle, AlertCircle, Key } from "lucide-react"
 import { useGenerateReport } from "@/lib/hooks/use-api"
+import { useAPIKey } from "@/lib/api-key-context"
 
 export function GenerateReportButton({ onSuccess }: { onSuccess?: (reportId: string) => void }) {
+  const { hasApiKey } = useAPIKey()
   const { generate, loading, error, reportId } = useGenerateReport()
   const [showSuccess, setShowSuccess] = useState(false)
 
   const handleGenerate = async () => {
+    // Check for API key first
+    if (!hasApiKey) {
+      return // Button should be disabled anyway, but just in case
+    }
+
     try {
       setShowSuccess(false)
       console.log("🚀 Starting report generation...")
@@ -29,7 +36,17 @@ export function GenerateReportButton({ onSuccess }: { onSuccess?: (reportId: str
       setTimeout(() => setShowSuccess(false), 3000)
     } catch (err) {
       console.error("❌ Report generation failed:", err)
-      alert(`Report generation failed: ${error || "Unknown error"}`)
+      // Show user-friendly error message
+      let errorMessage = error || (err instanceof Error ? err.message : "Unknown error")
+
+      // Check for API key related errors
+      if (errorMessage.includes("API key") || errorMessage.includes("authentication")) {
+        errorMessage = "Invalid API key. Please check your API key and try again."
+      } else if (errorMessage.includes("401")) {
+        errorMessage = "Authentication failed. Please verify your API key is correct."
+      }
+
+      alert(`Unable to generate report: ${errorMessage}`)
     }
   }
 
@@ -37,9 +54,9 @@ export function GenerateReportButton({ onSuccess }: { onSuccess?: (reportId: str
     <div className="flex flex-col gap-2">
       <Button
         onClick={handleGenerate}
-        disabled={loading}
+        disabled={loading || !hasApiKey}
         size="lg"
-        className="gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+        className="gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? (
           <>
@@ -50,6 +67,11 @@ export function GenerateReportButton({ onSuccess }: { onSuccess?: (reportId: str
           <>
             <CheckCircle className="h-5 w-5" />
             Report Generated!
+          </>
+        ) : !hasApiKey ? (
+          <>
+            <Key className="h-5 w-5" />
+            API Key Required
           </>
         ) : (
           <>
@@ -65,7 +87,13 @@ export function GenerateReportButton({ onSuccess }: { onSuccess?: (reportId: str
         </p>
       )}
 
-      {error && (
+      {!hasApiKey && !loading && (
+        <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+          Please add your Anthropic API key above to generate reports
+        </p>
+      )}
+
+      {error && hasApiKey && (
         <div className="flex items-center gap-2 text-xs text-red-500">
           <AlertCircle className="h-4 w-4" />
           <span>{error}</span>

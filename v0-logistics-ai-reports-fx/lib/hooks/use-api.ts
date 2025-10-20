@@ -4,14 +4,24 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { api } from "../api"
+import { LogisticsAPIClient } from "../api"
 import type { Report, ReportListResponse, CompanyProfile, AppStats } from "../types"
+import { useAPIKey } from "../api-key-context"
+
+/**
+ * Hook to get API client with current API key
+ */
+function useApiClient() {
+  const { apiKey } = useAPIKey()
+  return useMemo(() => new LogisticsAPIClient(undefined, apiKey), [apiKey])
+}
 
 /**
  * Hook to fetch all reports with loading and error states
  * Only fetches ONCE on mount, then only when refetch() is explicitly called
  */
 export function useReports(options?: { limit?: number; offset?: number; autoFetch?: boolean }) {
+  const api = useApiClient()
   const [reports, setReports] = useState<Report[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -38,7 +48,7 @@ export function useReports(options?: { limit?: number; offset?: number; autoFetc
     } finally {
       setLoading(false)
     }
-  }, [limit, offset])
+  }, [api, limit, offset])
 
   // Only fetch ONCE on mount if autoFetch is true
   useEffect(() => {
@@ -56,6 +66,7 @@ export function useReports(options?: { limit?: number; offset?: number; autoFetc
  * Only fetches ONCE when reportId changes, then only when refetch() is explicitly called
  */
 export function useReport(reportId: string | null) {
+  const api = useApiClient()
   const [report, setReport] = useState<Report | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -78,7 +89,7 @@ export function useReport(reportId: string | null) {
     } finally {
       setLoading(false)
     }
-  }, [reportId])
+  }, [api, reportId])
 
   // Only fetch when reportId changes (not on every render)
   useEffect(() => {
@@ -94,6 +105,7 @@ export function useReport(reportId: string | null) {
  * Hook to generate a new report
  */
 export function useGenerateReport() {
+  const api = useApiClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reportId, setReportId] = useState<string | null>(null)
@@ -114,7 +126,7 @@ export function useGenerateReport() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [api])
 
   return { generate, loading, error, reportId }
 }
@@ -123,6 +135,7 @@ export function useGenerateReport() {
  * Hook to delete a report
  */
 export function useDeleteReport() {
+  const api = useApiClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -140,7 +153,7 @@ export function useDeleteReport() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [api])
 
   return { deleteReport, loading, error }
 }
@@ -149,6 +162,7 @@ export function useDeleteReport() {
  * Hook to search reports
  */
 export function useSearchReports() {
+  const api = useApiClient()
   const [results, setResults] = useState<Report[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -170,7 +184,7 @@ export function useSearchReports() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [api])
 
   return { results, search, loading, error }
 }
@@ -180,6 +194,7 @@ export function useSearchReports() {
  * Only fetches ONCE on mount
  */
 export function useCompanyProfile() {
+  const api = useApiClient()
   const [profile, setProfile] = useState<CompanyProfile | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -199,7 +214,7 @@ export function useCompanyProfile() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [api])
 
   const updateProfile = useCallback(async (newProfile: CompanyProfile) => {
     setLoading(true)
@@ -215,7 +230,7 @@ export function useCompanyProfile() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [api])
 
   // Only fetch ONCE on mount
   useEffect(() => {
@@ -233,6 +248,7 @@ export function useCompanyProfile() {
  * Only fetches ONCE on mount
  */
 export function useAppStats() {
+  const api = useApiClient()
   const [stats, setStats] = useState<AppStats | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -252,7 +268,7 @@ export function useAppStats() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [api])
 
   // Only fetch ONCE on mount
   useEffect(() => {
@@ -270,6 +286,7 @@ export function useAppStats() {
  * Only fetches history ONCE when reportId changes
  */
 export function useChat(reportId: string | null) {
+  const api = useApiClient()
   const [messages, setMessages] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -292,7 +309,7 @@ export function useChat(reportId: string | null) {
     } finally {
       setLoading(false)
     }
-  }, [reportId])
+  }, [api, reportId])
 
   const sendMessage = useCallback(
     async (message: string) => {
@@ -335,7 +352,7 @@ export function useChat(reportId: string | null) {
         setLoading(false)
       }
     },
-    [reportId]
+    [api, reportId]
   )
 
   const clearHistory = useCallback(async () => {
@@ -347,7 +364,7 @@ export function useChat(reportId: string | null) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear history")
     }
-  }, [reportId])
+  }, [api, reportId])
 
   // Only fetch when reportId changes
   useEffect(() => {
@@ -363,6 +380,7 @@ export function useChat(reportId: string | null) {
  * Hook to download PDF
  */
 export function useDownloadPDF() {
+  const api = useApiClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -377,7 +395,7 @@ export function useDownloadPDF() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [api])
 
   return { download, loading, error }
 }

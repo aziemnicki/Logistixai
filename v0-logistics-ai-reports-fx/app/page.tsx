@@ -2,6 +2,7 @@ import Image from "next/image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { ReportsList } from "@/components/reports-list"
+import { APIKeyBanner } from "@/components/api-key-banner"
 
 export default function ReportsListPage() {
   return (
@@ -42,6 +43,7 @@ export default function ReportsListPage() {
 
       {/* Main Content - Now using real backend data */}
       <main className="container mx-auto px-6 py-8">
+        <APIKeyBanner />
         <ReportsList />
       </main>
     </div>

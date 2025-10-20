@@ -4,7 +4,7 @@ Chat Service - Manages chat interactions with reports using RAG.
 
 from agents import ChatAgent
 from config import settings
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import json
 import os
 from datetime import datetime
@@ -16,13 +16,13 @@ class ChatService:
 
     def __init__(self):
         """Initialize chat service."""
-        self.chat_agent = ChatAgent()
         os.makedirs(settings.CHAT_HISTORY_DIR, exist_ok=True)
 
     async def send_message(
         self,
         report_id: str,
-        message: str
+        message: str,
+        api_key: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Send a message and get AI response.
@@ -30,15 +30,19 @@ class ChatService:
         Args:
             report_id: Report to chat about
             message: User's message
+            api_key: Optional Anthropic API key
 
         Returns:
             Dictionary with response and metadata
         """
+        # Create chat agent with provided API key
+        chat_agent = ChatAgent(api_key=api_key)
+
         # Load conversation history
         history = self.get_chat_history(report_id)
 
         # Get answer from chat agent
-        result = await self.chat_agent.answer_question(
+        result = await chat_agent.answer_question(
             report_id=report_id,
             question=message,
             conversation_history=history.get("messages", [])
@@ -131,7 +135,8 @@ class ChatService:
 
     async def generate_suggested_questions(
         self,
-        report_id: str
+        report_id: str,
+        api_key: Optional[str] = None
     ) -> List[str]:
         """Generate suggested follow-up questions."""
         history = self.get_chat_history(report_id)
@@ -148,7 +153,9 @@ class ChatService:
 
         # Generate contextual questions
         try:
-            questions = await self.chat_agent.generate_follow_up_questions(
+            # Create chat agent with provided API key
+            chat_agent = ChatAgent(api_key=api_key)
+            questions = await chat_agent.generate_follow_up_questions(
                 report_id=report_id,
                 conversation_history=history.get("messages", [])
             )

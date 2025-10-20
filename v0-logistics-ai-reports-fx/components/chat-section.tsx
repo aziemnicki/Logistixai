@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SendIcon, Loader2Icon } from "lucide-react"
 import { MarkdownRenderer } from "@/components/markdown-renderer"
-import { api } from "@/lib/api"
+import { LogisticsAPIClient } from "@/lib/api"
+import { useAPIKey } from "@/lib/api-key-context"
 
 interface ChatMessage {
   id: string
@@ -29,6 +30,11 @@ export function ChatSection({ elementId, elementTitle, elementContent, backgroun
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+
+  // Get API client with current API key
+  const { apiKey } = useAPIKey()
+  const api = new LogisticsAPIClient(undefined, apiKey)
 
   const suggestedQuestions = [
     `What are the key deadlines and compliance requirements mentioned in "${elementTitle}"?`,
@@ -41,7 +47,10 @@ export function ChatSection({ elementId, elementTitle, elementContent, backgroun
   }, [messages])
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    // Scroll within the chat container only, don't scroll the page
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,7 +148,7 @@ export function ChatSection({ elementId, elementTitle, elementContent, backgroun
       <h3 className="font-semibold text-sm">Ask follow-up 🪄</h3>
 
       {/* Chat Messages */}
-      <div className="space-y-3 max-h-96 overflow-y-auto bg-muted/30 rounded-lg p-4">
+      <div ref={messagesContainerRef} className="space-y-3 max-h-96 overflow-y-auto bg-muted/30 rounded-lg p-4">
         {messages.length === 0 && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground text-center">Ask questions about this report element</p>

@@ -15,7 +15,7 @@ try:
     MCP_AGENT_AVAILABLE = True
 except ImportError:
     MCP_AGENT_AVAILABLE = False
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import json
 import os
 from datetime import datetime
@@ -26,19 +26,7 @@ class ReportService:
     """Service for orchestrating report generation with multi-agent workflow."""
 
     def __init__(self):
-        """Initialize report service with agents."""
-        # Choose search agent based on MCP availability and configuration
-        if settings.USE_MCP_AGENTS and MCP_AGENT_AVAILABLE and is_mcp_configured():
-            print("✓ Using MCP-enabled Search Agent (autonomous mode)")
-            self.search_agent = MCPSearchAgent()
-            self.mcp_enabled = True
-        else:
-            print("✓ Using standard Search Agent (fallback mode)")
-            self.search_agent = SearchAgent()
-            self.mcp_enabled = False
-
-        self.report_agent = ReportGeneratorAgent()
-        self.validator_agent = ValidatorAgent()
+        """Initialize report service."""
         self.vector_db = vector_db
 
         # Ensure data directories exist
@@ -47,13 +35,15 @@ class ReportService:
 
     async def generate_report(
         self,
-        company_profile: Dict[str, Any]
+        company_profile: Dict[str, Any],
+        api_key: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Generate a complete validated compliance report.
 
         Args:
             company_profile: Company profile data
+            api_key: Optional Anthropic API key
 
         Returns:
             Dictionary with report data and metadata
@@ -68,9 +58,21 @@ class ReportService:
         validation_history = []
 
         try:
+            # Create agents with provided API key
+            # Choose search agent based on MCP availability and configuration
+            if settings.USE_MCP_AGENTS and MCP_AGENT_AVAILABLE and is_mcp_configured():
+                print("✓ Using MCP-enabled Search Agent (autonomous mode)")
+                search_agent = MCPSearchAgent(api_key=api_key)
+            else:
+                print("✓ Using standard Search Agent (fallback mode)")
+                search_agent = SearchAgent(api_key=api_key)
+
+            report_agent = ReportGeneratorAgent(api_key=api_key)
+            validator_agent = ValidatorAgent(api_key=api_key)
+
             # Step 1: Search Agent - Gather data
             print(f"[1/3] Search Phase")
-            search_result = await self.search_agent.execute(company_profile)
+            search_result = await search_agent.execute(company_profile)
 
             if not search_result["success"]:
                 raise Exception(f"Search failed: {search_result.get('error')}")
@@ -92,7 +94,7 @@ class ReportService:
                 print(f"\n   Iteration {iteration_count}/{max_iterations}")
 
                 # Generate report
-                report_result = await self.report_agent.execute(
+                report_result = await report_agent.execute(
                     company_profile=company_profile,
                     search_results=search_results,
                     previous_feedback=previous_feedback
@@ -106,7 +108,7 @@ class ReportService:
                 # Step 3: Validate report
                 print(f"\n[3/3] Validation Phase (Iteration {iteration_count})")
 
-                validation_result = await self.validator_agent.execute(
+                validation_result = await validator_agent.execute(
                     report=report_content,
                     company_profile=company_profile,
                     search_results=search_results

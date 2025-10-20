@@ -13,9 +13,24 @@ import json
 class ChatAgent:
     """Agent responsible for answering questions about reports using RAG."""
 
-    def __init__(self):
-        """Initialize Chat Agent with Claude client and vector DB."""
-        self.client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    def __init__(self, api_key: Optional[str] = None):
+        """Initialize Chat Agent with Claude client and vector DB.
+
+        Args:
+            api_key: Optional Anthropic API key. If not provided, uses settings.ANTHROPIC_API_KEY
+        """
+        # Use provided API key, or fall back to settings
+        effective_api_key = api_key or settings.ANTHROPIC_API_KEY
+
+        # Validate API key is not empty or whitespace
+        if not effective_api_key or not effective_api_key.strip():
+            raise ValueError("API key is required. Either provide it or set ANTHROPIC_API_KEY in .env")
+
+        # Validate API key format (should start with sk-ant-)
+        if not effective_api_key.strip().startswith("sk-ant-"):
+            raise ValueError("Invalid API key format. Anthropic API keys should start with 'sk-ant-'")
+
+        self.client = Anthropic(api_key=effective_api_key.strip())
         self.model = settings.CLAUDE_MODEL
         self.vector_db = vector_db
 

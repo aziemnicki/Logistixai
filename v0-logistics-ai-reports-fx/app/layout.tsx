@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Inter } from "next/font/google"
 import { Geist_Mono } from "next/font/google"
+import { APIKeyProvider } from "@/lib/api-key-context"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -33,8 +34,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}>
-        {children}
-        <Analytics />
+        <APIKeyProvider>
+          {children}
+          <Analytics />
+        </APIKeyProvider>
       </body>
     </html>
   )

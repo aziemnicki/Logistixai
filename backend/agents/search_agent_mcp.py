@@ -3,9 +3,10 @@ Search Agent with MCP Integration - Uses claude-agent-sdk for autonomous web sea
 Works with Gate22 MCP Gateway for real-time compliance data retrieval.
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import asyncio
 import json
+import os
 
 try:
     from claude_agent_sdk import (
@@ -33,11 +34,27 @@ class MCPSearchAgent:
     Can use Gate22 MCP Gateway tools for real-time data retrieval.
     """
 
-    def __init__(self):
-        """Initialize MCP Search Agent."""
+    def __init__(self, api_key: Optional[str] = None):
+        """Initialize MCP Search Agent.
+
+        Args:
+            api_key: Optional Anthropic API key. If not provided, uses settings.ANTHROPIC_API_KEY
+        """
         if not CLAUDE_SDK_AVAILABLE:
             raise ImportError("claude-agent-sdk is required. Install with: pip install claude-agent-sdk")
 
+        # Use provided API key, or fall back to settings
+        effective_api_key = api_key or settings.ANTHROPIC_API_KEY
+
+        # Validate API key is not empty or whitespace
+        if not effective_api_key or not effective_api_key.strip():
+            raise ValueError("API key is required. Either provide it or set ANTHROPIC_API_KEY in .env")
+
+        # Validate API key format (should start with sk-ant-)
+        if not effective_api_key.strip().startswith("sk-ant-"):
+            raise ValueError("Invalid API key format. Anthropic API keys should start with 'sk-ant-'")
+
+        self.api_key = effective_api_key.strip()
         self.mcp_configured = is_mcp_configured()
 
     async def execute(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
@@ -190,6 +207,11 @@ Be thorough but focused. Aim for 10-15 high-quality sources."""
         tool_calls_count = 0
 
         print("   🤖 Creating Claude SDK client...")
+
+        # Set API key in environment for ClaudeSDKClient
+        original_api_key = os.environ.get('ANTHROPIC_API_KEY')
+        os.environ['ANTHROPIC_API_KEY'] = self.api_key
+
         try:
             async with ClaudeSDKClient(options=options) as client:
                 print("   📤 Sending query to Claude...")
@@ -268,6 +290,12 @@ Be thorough but focused. Aim for 10-15 high-quality sources."""
             print(f"   ❌ Error during MCP search execution: {e}")
             import traceback
             print(f"      {traceback.format_exc()}")
+        finally:
+            # Restore original API key
+            if original_api_key is not None:
+                os.environ['ANTHROPIC_API_KEY'] = original_api_key
+            elif 'ANTHROPIC_API_KEY' in os.environ:
+                del os.environ['ANTHROPIC_API_KEY']
 
         # Parse search results from response
         print(f"\n   🔍 Parsing search results from response...")
@@ -478,7 +506,7 @@ Be thorough but focused. Aim for 10-15 high-quality sources."""
         if len(search_results) < 10:
             print(f"   Only {len(search_results)} from web, trying original search agent...")
             from agents.search_agent import SearchAgent
-            fallback_agent = SearchAgent()
+            fallback_agent = SearchAgent(api_key=self.api_key)
             basic_result = await fallback_agent.execute(company_profile)
             if basic_result.get('success'):
                 search_results.extend(basic_result.get('search_results', []))

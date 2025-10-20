@@ -6,16 +6,31 @@ First agent in the pipeline.
 from anthropic import Anthropic
 from config import settings
 from mcp_client import get_mcp_client
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import json
 
 
 class SearchAgent:
     """Agent responsible for searching and gathering compliance information."""
 
-    def __init__(self):
-        """Initialize Search Agent with Claude client."""
-        self.client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    def __init__(self, api_key: Optional[str] = None):
+        """Initialize Search Agent with Claude client.
+
+        Args:
+            api_key: Optional Anthropic API key. If not provided, uses settings.ANTHROPIC_API_KEY
+        """
+        # Use provided API key, or fall back to settings
+        effective_api_key = api_key or settings.ANTHROPIC_API_KEY
+
+        # Validate API key is not empty or whitespace
+        if not effective_api_key or not effective_api_key.strip():
+            raise ValueError("API key is required. Either provide it or set ANTHROPIC_API_KEY in .env")
+
+        # Validate API key format (should start with sk-ant-)
+        if not effective_api_key.strip().startswith("sk-ant-"):
+            raise ValueError("Invalid API key format. Anthropic API keys should start with 'sk-ant-'")
+
+        self.client = Anthropic(api_key=effective_api_key.strip())
         self.model = settings.CLAUDE_MODEL
         self.mcp_client = get_mcp_client()
 

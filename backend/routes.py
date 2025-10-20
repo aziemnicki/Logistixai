@@ -3,7 +3,7 @@ API Routes for Logistics Compliance App.
 Defines all REST and WebSocket endpoints.
 """
 
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Query, Header
 from fastapi.responses import FileResponse
 from typing import Optional
 import json
@@ -30,6 +30,15 @@ from simplified_models import (
 
 # Create router
 router = APIRouter()
+
+
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+def get_api_key(x_api_key: Optional[str] = Header(None)) -> Optional[str]:
+    """Extract API key from request header or fall back to environment variable."""
+    return x_api_key or settings.ANTHROPIC_API_KEY
 
 
 # ============================================================================
@@ -82,11 +91,27 @@ async def update_company_profile(profile: CompanyProfile):
 # ============================================================================
 
 @router.post("/api/reports/generate", response_model=GenerateReportResponse)
-async def generate_report(request: GenerateReportRequest):
+async def generate_report(request: GenerateReportRequest, api_key: Optional[str] = Header(None, alias="X-API-Key")):
     """
     Generate a new compliance report.
     This triggers the multi-agent pipeline: Search → Generate → Validate.
     """
+    # Get effective API key (from header or environment)
+    effective_api_key = api_key or settings.ANTHROPIC_API_KEY
+
+    # Validate API key
+    if not effective_api_key or not effective_api_key.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="API key is required. Please provide your Anthropic API key."
+        )
+
+    if not effective_api_key.strip().startswith("sk-ant-"):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid API key format. Anthropic API keys should start with 'sk-ant-'"
+        )
+
     # Load company profile
     profile_path = settings.COMPANY_PROFILE_PATH
 
@@ -107,7 +132,7 @@ async def generate_report(request: GenerateReportRequest):
 
     # Generate report
     try:
-        result = await report_service.generate_report(company_profile)
+        result = await report_service.generate_report(company_profile, api_key=effective_api_key)
 
         if not result["success"]:
             raise HTTPException(
@@ -374,8 +399,24 @@ async def get_chat_history(report_id: str):
 
 
 @router.post("/api/chat/{report_id}/message", response_model=ChatMessageResponse)
-async def send_chat_message(report_id: str, request: ChatMessageRequest):
+async def send_chat_message(report_id: str, request: ChatMessageRequest, api_key: Optional[str] = Header(None, alias="X-API-Key")):
     """Send a chat message and get AI response."""
+    # Get effective API key (from header or environment)
+    effective_api_key = api_key or settings.ANTHROPIC_API_KEY
+
+    # Validate API key
+    if not effective_api_key or not effective_api_key.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="API key is required. Please provide your Anthropic API key."
+        )
+
+    if not effective_api_key.strip().startswith("sk-ant-"):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid API key format. Anthropic API keys should start with 'sk-ant-'"
+        )
+
     try:
         # Verify report exists
         report = report_service.get_report_by_id(report_id)
@@ -388,7 +429,8 @@ async def send_chat_message(report_id: str, request: ChatMessageRequest):
         # Send message
         result = await chat_service.send_message(
             report_id=report_id,
-            message=request.message
+            message=request.message,
+            api_key=effective_api_key
         )
 
         if not result["success"]:
@@ -416,8 +458,24 @@ async def send_chat_message(report_id: str, request: ChatMessageRequest):
 
 
 @router.get("/api/chat/{report_id}/suggestions")
-async def get_suggested_questions(report_id: str):
+async def get_suggested_questions(report_id: str, api_key: Optional[str] = Header(None, alias="X-API-Key")):
     """Get suggested follow-up questions."""
+    # Get effective API key (from header or environment)
+    effective_api_key = api_key or settings.ANTHROPIC_API_KEY
+
+    # Validate API key
+    if not effective_api_key or not effective_api_key.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="API key is required. Please provide your Anthropic API key."
+        )
+
+    if not effective_api_key.strip().startswith("sk-ant-"):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid API key format. Anthropic API keys should start with 'sk-ant-'"
+        )
+
     try:
         # Verify report exists
         report = report_service.get_report_by_id(report_id)
@@ -427,7 +485,7 @@ async def get_suggested_questions(report_id: str):
                 detail=f"Report {report_id} not found"
             )
 
-        suggestions = await chat_service.generate_suggested_questions(report_id)
+        suggestions = await chat_service.generate_suggested_questions(report_id, api_key=effective_api_key)
 
         return {
             "report_id": report_id,
