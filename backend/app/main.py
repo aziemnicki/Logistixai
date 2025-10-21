@@ -50,10 +50,10 @@ async def lifespan(app: FastAPI):
         print(f"✓ Company profile found at: {settings.COMPANY_PROFILE_PATH}")
     else:
         print(f"⚠️  No company profile found. Create one at: {settings.COMPANY_PROFILE_PATH}")
-        print(f"   See example_company.json for reference")
+        print("   See example_company.json for reference")
 
     # Configuration summary
-    print(f"\n📋 Configuration:")
+    print("\n📋 Configuration:")
     print(f"   • Model: {settings.CLAUDE_MODEL}")
     print(f"   • Data directory: {settings.DATA_DIR}")
     print(f"   • ChromaDB path: {settings.CHROMA_DB_PATH}")
@@ -62,12 +62,12 @@ async def lifespan(app: FastAPI):
     if settings.MCP_SERVER_URL:
         print(f"   • MCP Server: {settings.MCP_SERVER_URL}")
     else:
-        print(f"   ⚠️  MCP Server not configured (using mock data)")
+        print("   ⚠️  MCP Server not configured (using mock data)")
 
-    print(f"\n{'='*60}")
-    print(f"✅ Application started successfully")
-    print(f"📚 API Documentation: http://localhost:8000/docs")
-    print(f"{'='*60}\n")
+    print("\n{'='*60}")
+    print("✅ Application started successfully")
+    print("📚 API Documentation: http://localhost:8000/docs")
+    print("{'='*60}\n")
 
     yield
 
@@ -149,14 +149,14 @@ async def root():
 # MAIN ENTRY POINT
 # ============================================================================
 
-if __name__ == "__main__":
-    import uvicorn
+# if __name__ == "__main__":
+#     import uvicorn
 
-    # Run with uvicorn
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=settings.DEBUG,
-        log_level="info"
-    )
+#     # Run with uvicorn
+#     uvicorn.run(
+#         "main:app",
+#         host="0.0.0.0",
+#         port=8000,
+#         reload=settings.DEBUG,
+#         log_level="info"
+#     )
