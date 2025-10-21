@@ -149,14 +149,14 @@ async def root():
 # MAIN ENTRY POINT
 # ============================================================================
 
-# if __name__ == "__main__":
-#     import uvicorn
+if __name__ == "__main__":
+    import uvicorn
 
-#     # Run with uvicorn
-#     uvicorn.run(
-#         "main:app",
-#         host="0.0.0.0",
-#         port=8000,
-#         reload=settings.DEBUG,
-#         log_level="info"
-#     )
+    # Run with uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=settings.DEBUG,
+        log_level="info"
+    )
